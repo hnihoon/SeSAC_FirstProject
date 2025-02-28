@@ -6,9 +6,12 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class EmailverificationRequestDto {
+public class EmailverificationCheckRequestDto {
 
   @NotBlank
   private String email;
+
+  @NotBlank
+  private String checkNum;
 
 }

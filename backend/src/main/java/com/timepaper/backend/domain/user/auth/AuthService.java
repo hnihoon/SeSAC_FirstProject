@@ -2,6 +2,7 @@ package com.timepaper.backend.domain.user.auth;
 
 import com.timepaper.backend.domain.javaemail.JavaEmailDto;
 import com.timepaper.backend.domain.javaemail.JavaEmailSender;
+import com.timepaper.backend.domain.user.auth.dto.EmailverificationCheckRequestDto;
 import com.timepaper.backend.domain.user.auth.dto.EmailverificationRequestDto;
 import com.timepaper.backend.domain.user.auth.dto.SignupDto;
 import com.timepaper.backend.domain.user.auth.entity.Auth;
@@ -38,7 +39,7 @@ public class AuthService {
   }
 
   @Transactional
-  public boolean checkEmailVerificationCode(EmailverificationRequestDto dto) {
+  public boolean checkEmailVerificationCode(EmailverificationCheckRequestDto dto) {
     String randomCode = redisTemplate.opsForValue().get(dto.getEmail());
     return randomCode != null && randomCode.equals(dto.getCheckNum());
   }
