@@ -12,6 +12,7 @@ export default function SignUp() {
   const [password, setPassword] = useState(''); // 비밀번호input의 값을 넣을 useState
   const [passwordCheck, setPasswordCheck] = useState(false); //비밀번호확인 input의 값을 넣을 useState
   const [isEnable, setIsEnable] = useState(false); // 회원가입 버튼 활성화/비활성화
+  const [emailForwarding, setEmailForwarding] = useState(false); // 인증번호 전송시 전송중 표시를 위한 useState
 
   const [verification, setVerification] = useState({
     passwordConstraints: false, // 비밀번호 제약조건 성립여부
@@ -22,8 +23,7 @@ export default function SignUp() {
   });
 
   useEffect(() => {
-    const allTrue = Object.values(verification).every(Boolean);
-    setIsEnable(allTrue);
+    setIsEnable(Object.values(verification).every((value) => value === true));
   }, [verification]);
 
   const email_format = /^[0-9a-zA-Z._%+-]+@[0-9a-zA-Z.-]+\.[cC][oO][mM]$/;
@@ -31,6 +31,8 @@ export default function SignUp() {
   const emailCertification = async (e) => {
     e.preventDefault();
     setTimeLeft(300);
+    setEmailForwarding(true);
+    setIsCodeSent(true);
 
     if (!email || !email_format.test(email)) {
       alert('이메일 형식이 올바르지 않습니다.');
@@ -39,9 +41,11 @@ export default function SignUp() {
       try {
         const response = await api.requestEmailVerificationCode(email);
         alert('인증 메일이 전송되었습니다.');
-        setIsCodeSent(true);
+        setEmailForwarding(false);
       } catch (error) {
         console.error(error);
+        alert('이메일 전송에 실패했습니다. 다시 시도해주세요.');
+        setIsCodeSent(false);
       }
     }
   };
@@ -124,10 +128,6 @@ export default function SignUp() {
     );
   };
 
-  const handleAlertSignUp = () => {
-    alert('잘못 입력된 내용이 있습니다.');
-  };
-
   return (
     <>
       <div className={styles.signUpContainer}>
@@ -145,18 +145,22 @@ export default function SignUp() {
               onBlur={(e) => handleBlur(0, e.target.value)}
               style={{ textAlign: placeholdersVisible[0] ? 'center' : 'left' }}
             />
-            <button
-              className={
-                verification.verificationCodeCheck
-                  ? styles.butLock
-                  : email_format.test(email)
-                    ? styles.emailCheckBut
-                    : styles.butLock
-              }
-              onClick={emailCertification}
-            >
-              인증
-            </button>
+            {emailForwarding ? (
+              <button className={styles.butLock}>전송중</button>
+            ) : (
+              <button
+                className={
+                  verification.verificationCodeCheck
+                    ? styles.butLock
+                    : email_format.test(email)
+                      ? styles.emailCheckBut
+                      : styles.butLock
+                }
+                onClick={emailCertification}
+              >
+                인증
+              </button>
+            )}
           </div>
 
           {isCodeSent && (
@@ -288,7 +292,7 @@ export default function SignUp() {
           title={'가입하기'}
           onClick={handleSignUp}
           isEnable={isEnable}
-          cursor={isEnable ? 'pointer' : 'not-allowed'}
+          cursor={isEnable ? 'pointer' : 'default'}
         />
       </div>
     </>

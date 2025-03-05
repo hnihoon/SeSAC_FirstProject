@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from './BottomButton.module.css';
 
-export default function BottomButton({ title, onClick, isEnable, pointer }) {
+export default function BottomButton({ title, onClick, isEnable, cursor }) {
   const [buttonColor, setButtonColor] = useState({ enableColor: '', disableColor: '' });
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function BottomButton({ title, onClick, isEnable, pointer }) {
       disabled={!isEnable}
       style={{
         backgroundColor: isEnable ? buttonColor.enableColor : buttonColor.disableColor,
-        cursor: pointer,
+        cursor: cursor,
       }}
     >
       {title}
