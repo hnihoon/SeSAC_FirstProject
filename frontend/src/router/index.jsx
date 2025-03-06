@@ -11,6 +11,7 @@ import NotFound from '../pages/error/NotFound';
 import HeaderLayout from '../layout/HeaderLayout.jsx';
 import TimePaperCreate from '../pages/time-paper-create/TimePaperCreate.jsx';
 import TimePaperSetLock from '../pages/time-paper-set-lock/TimePaperSetLock.jsx';
+import ModalTest from '../pages/ModalTest.jsx';
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
           {
             path: '/my',
             element: <MyPage />,
+          },
+          {
+            path: 'test',
+            element: <ModalTest></ModalTest>,
           },
           {
             path: '/timepaper',

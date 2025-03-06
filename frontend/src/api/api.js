@@ -99,8 +99,15 @@ export const api = {
     return response;
   },
 
-  getPostits: async (timepaperId) => {
-    const response = await apiInstance.get(`/timepapers/${timepaperId}/postits`);
+  getPostits: async (timepaperId, { page, size }) => {
+    const response = await apiInstance.get(
+      `/timepapers/${timepaperId}/postits?page=${page}&size=${size}`,
+    );
+    return response;
+  },
+
+  getPostitsAll: async (timepaperId) => {
+    const response = await apiInstance.get(`/timepapers/${timepaperId}/postitsall`);
     return response;
   },
 
