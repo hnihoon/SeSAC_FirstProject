@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import RootLayout from '../layout/RootLayout.jsx';
+
 import SignUp from '../pages/signup/SignUp.jsx';
 import Home from '../pages/home/Home';
 import Login from '../pages/login/Login.jsx';
