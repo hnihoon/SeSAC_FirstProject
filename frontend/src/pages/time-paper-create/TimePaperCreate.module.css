@@ -1,0 +1,22 @@
+.container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f6f1e7;
+  gap: 20%;
+}
+
+.inputContainer {
+  width: 80%;
+}
+
+.errContainer {
+  text-align: center;
+  margin-top: 3%;
+  color: red;
+  font-size: var(--font-size-small);
+  font-family: var(--pretendard-Light);
+}

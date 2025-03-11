@@ -2,9 +2,13 @@ package com.timepaper.backend.global.auth.token.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.timepaper.backend.domain.user.repository.UserRepository;
 import com.timepaper.backend.global.auth.token.entity.RefreshTokenInfo;
 import com.timepaper.backend.global.auth.token.util.RefreshTokenUtil;
-import com.timepaper.backend.global.exception.InvalidRefreshTokenException;
+import com.timepaper.backend.global.exception.ErrorCode;
+import com.timepaper.backend.global.exception.custom.auth.InvalidRefreshTokenException;
+import com.timepaper.backend.global.exception.custom.common.ResourceNotFoundException;
+import com.timepaper.backend.global.exception.custom.common.ServerErrorException;
 import java.time.Duration;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +25,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RefreshTokenService {
 
-  private static final long PERSISTENT_VALIDITY_DAYS = 7;
+  private static final long PERSISTENT_VALIDITY_DAYS = 7; //개발용 7일, 배포시 30분
   private final StringRedisTemplate redisTemplate;
   private final RefreshTokenUtil refreshTokenUtil;
   private final ObjectMapper objectMapper;
+  private final UserRepository userRepository;
 
   public void save(String refreshToken, Authentication authentication) {
 
     String hashedToken = refreshTokenUtil.hashToken(refreshToken);
-    String emailKey = refreshTokenUtil.createEmailKey(authentication.getName());
+    String emailKey = refreshTokenUtil.encodeEmailToKey(authentication.getName());
 
     RefreshTokenInfo tokenInfo = RefreshTokenInfo.from(authentication, hashedToken);
 
@@ -37,7 +42,7 @@ public class RefreshTokenService {
     try {
       tokenInfoJson = objectMapper.writeValueAsString(tokenInfo);
     } catch (JsonProcessingException e) {
-      throw new RuntimeException("Failed to serialize RefreshTokenInfo", e);
+      throw new ServerErrorException();
     }
 
     try {
@@ -47,7 +52,7 @@ public class RefreshTokenService {
           Duration.ofDays(PERSISTENT_VALIDITY_DAYS)
       );
     } catch (DataAccessException e) {
-      throw new RuntimeException("Failed to save RefreshTokenInfo to Redis", e);
+      throw new ServerErrorException();
     }
 
   }
@@ -58,7 +63,7 @@ public class RefreshTokenService {
     String tokenInfoJson = redisTemplate.opsForValue().get(emailKey);
 
     if (tokenInfoJson == null) {
-      throw new InvalidRefreshTokenException("refresh token 유효하지 않음");
+      throw new InvalidRefreshTokenException();
     }
 
     try {
@@ -72,14 +77,42 @@ public class RefreshTokenService {
               SimpleGrantedAuthority::new).collect(Collectors.toList()));
 
     } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+      throw new ServerErrorException();
     }
 
   }
 
+  public Long getUserId(String refreshToken) {
+    String emailKey = getEmailKey(refreshToken);
+
+    String tokenInfoJson = redisTemplate.opsForValue().get(emailKey);
+
+    if (tokenInfoJson == null) {
+      throw new InvalidRefreshTokenException();
+    }
+
+    String email;
+    try {
+      RefreshTokenInfo refreshTokenInfo = objectMapper.readValue(tokenInfoJson,
+          RefreshTokenInfo.class);
+      email = refreshTokenInfo.getEmail();
+    } catch (JsonProcessingException e) {
+      throw new ServerErrorException();
+    }
+
+    return userRepository.findUserIdByEmail(email)
+        .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND));
+  }
+
+  public void delete(String email) {
+    String emailKey = refreshTokenUtil.encodeEmailToKey(email);
+
+    Boolean isDeleted = redisTemplate.delete(emailKey);
+    log.info(isDeleted.toString());
+  }
+
+
   private String getEmailKey(String refreshToken) {
-    log.info("getEmail 부분");
-    log.info("refreshToken : {}", refreshToken);
     return refreshToken.split("-")[0];
   }
 }
