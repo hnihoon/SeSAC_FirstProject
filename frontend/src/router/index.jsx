@@ -3,6 +3,7 @@ import RootLayout from '../layout/RootLayout.jsx';
 import SignUp from '../pages/signup/SignUp.jsx';
 import Home from '../pages/home/Home';
 import Login from '../pages/login/Login.jsx';
+
 import MyPage from '../pages/mypage/MyPage.jsx';
 import TimePaperDetail from '../pages/time-paper-detail/TimePaperDetail.jsx';
 import TimePaperIsLocked from '../pages/time-paper-is-locked/TimePaperIsLocked.jsx';
@@ -16,7 +17,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <RootLayout />,
-    errorElement: <NotFound />,
+    // errorElement: <NotFound />,
     children: [
       {
         index: true,
