@@ -23,12 +23,14 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
+
   width: 400px;
   height: 400px;
 }
 
 .logoImage {
   width: 100%;
+
   height: auto;
   user-select: none;
   pointer-events: none;
@@ -39,6 +41,7 @@
   height: 7%;
   background-color: transparent;
   position: absolute;
+
   bottom: 30px;
   right: 30px;
   text-align: center;
@@ -49,6 +52,7 @@
   border-bottom: 1px solid var(--black-color);
   padding-bottom: 5px;
 }
+
 
 .fromText {
   height: 100%;
@@ -71,6 +75,7 @@
 
 .textareaWrapper {
   position: absolute;
+
   top: 130px;
   left: 30px;
   width: 70%;
