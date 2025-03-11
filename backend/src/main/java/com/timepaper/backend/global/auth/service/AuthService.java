@@ -1,14 +1,18 @@
 package com.timepaper.backend.global.auth.service;
 
 import com.timepaper.backend.domain.user.entity.User;
+import com.timepaper.backend.domain.user.repository.UserRepository;
 import com.timepaper.backend.global.auth.dto.CertificationNumberRequestDto;
 import com.timepaper.backend.global.auth.dto.EmailCertificationRequestDto;
-import com.timepaper.backend.global.auth.dto.SignupDto;
-import com.timepaper.backend.global.auth.repository.AuthRepository;
+import com.timepaper.backend.global.auth.dto.SignupRequestDto;
 import com.timepaper.backend.global.auth.token.service.RefreshTokenService;
 import com.timepaper.backend.global.auth.token.util.JWTUtil;
 import com.timepaper.backend.global.auth.token.util.RefreshTokenUtil;
 import com.timepaper.backend.global.emailsender.EmailSendManager;
+import com.timepaper.backend.global.exception.custom.signup.DuplicateEmailException;
+import com.timepaper.backend.global.exception.custom.signup.ExpiredAuthCodeException;
+import com.timepaper.backend.global.exception.custom.signup.ExpiredEmailVerificationException;
+import com.timepaper.backend.global.exception.custom.signup.InvalidAuthCodeException;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import java.util.UUID;
@@ -30,13 +34,14 @@ public class AuthService {
   private final RefreshTokenService refreshTokenService;
   private final JWTUtil jwtUtil;
   private final RefreshTokenUtil refreshTokenUtil;
-  private final AuthRepository authRepository;
+  private final UserRepository userRepository;
   private final RedisTemplate<String, String> redisTemplate;
   private final EmailSendManager emailSendManager;
   private final PasswordEncoder passwordEncoder;
 
-  public void setTokensResponse(HttpServletResponse response, Authentication authentication) {
-    String accessToken = jwtUtil.createToken(authentication);
+  public void setTokensResponse(HttpServletResponse response, Authentication authentication,
+      Long userId) {
+    String accessToken = jwtUtil.createToken(authentication, userId);
     String refreshToken = refreshTokenUtil.createRefreshToken(authentication.getName());
     refreshTokenService.save(refreshToken, authentication);
 
@@ -49,7 +54,12 @@ public class AuthService {
   public void reissueToken(HttpServletResponse response, String refreshToken) {
 
     Authentication authentication = refreshTokenService.validate(refreshToken);
-    setTokensResponse(response, authentication);
+
+    //refreshToken에서 email을 가져오고, 이걸 기반으로 user_id 가져오기
+    Long userId = refreshTokenService.getUserId(refreshToken);
+    log.info("userId: {}", userId);
+
+    setTokensResponse(response, authentication, userId);
   }
 
 
@@ -69,25 +79,25 @@ public class AuthService {
     String path = "/api/auth";
 
     return ResponseCookie.from("refresh_token", refreshToken)
-               .httpOnly(true)
-               .secure(true) //개발환경 false, 배포시 true
-               .sameSite("None")
-               .path(path)
-               .maxAge(maxAge)
-               .build();
+        .httpOnly(true)
+        .secure(true) //개발환경 false, 배포시 true
+        .sameSite("None")
+        .path(path)
+        .maxAge(maxAge)
+        .build();
   }
 
   public void requestEmailVerificationCode(EmailCertificationRequestDto dto) {
-    boolean isEmailExistence = authRepository.findByEmail(dto.getEmail());
+    boolean isEmailExistence = userRepository.isExistEmail(dto.getEmail());
 
     if (isEmailExistence) {
-      throw new IllegalArgumentException("존재하는 이메일입니다.");
+      throw new DuplicateEmailException();
     }
 
     String authenticationCode = UUID.randomUUID().toString()
-                                    .replace("-", "")
-                                    .substring(0, 6)
-                                    .toUpperCase();
+        .replace("-", "")
+        .substring(0, 6)
+        .toUpperCase();
     redisTemplate.opsForValue().set(dto.getEmail(), authenticationCode, Duration.ofMinutes(5));
 
     emailSendManager.sendEmail(dto.getEmail(), "타임페이퍼 인증코드", authenticationCode);
@@ -98,13 +108,13 @@ public class AuthService {
     String authenticationCode = redisTemplate.opsForValue().get(dto.getEmail());
 
     if (authenticationCode == null) {
-      throw new IllegalArgumentException("인증 코드가 없습니다.");
+      throw new ExpiredAuthCodeException();
     }
 
     boolean isVerificationCodeEqual = authenticationCode.equals(dto.getAuthenticationCode());
 
     if (!isVerificationCodeEqual) {
-      throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+      throw new InvalidAuthCodeException();
     }
 
     redisTemplate.opsForValue()
@@ -113,19 +123,77 @@ public class AuthService {
 
 
   @Transactional
-  public void signUp(SignupDto dto) {
+  public void signUp(SignupRequestDto dto) {
     boolean isAuthenticatedEmail = Boolean.parseBoolean(
         redisTemplate.opsForValue().get(dto.getEmail())
     );
 
     if (!isAuthenticatedEmail) {
-      throw new IllegalArgumentException("이메일 인증이 필요합니다.");
+      throw new ExpiredEmailVerificationException();
     }
 
     String encodedPassword = passwordEncoder.encode(dto.getPassword());
 
-    User auth = dto.toEntity(encodedPassword);
-    authRepository.save(auth);
+    User user = dto.toEntity(encodedPassword);
+    userRepository.save(user);
+  }
+
+  public boolean emailverification(EmailCertificationRequestDto dto) {
+    boolean emailExistence = authRepository.findByEmail(dto.getEmail());
+
+    if (emailExistence) {
+      return true;
+    } else {
+      String randomCode = UUID.randomUUID().toString().replace("-", "").substring(0, 6)
+          .toUpperCase();
+      redisTemplate.opsForValue().set(dto.getEmail(), randomCode, Duration.ofMinutes(5));
+
+      System.out.println(randomCode); // 인증번호
+
+//      JavaEmailDto javaEmailDto = new JavaEmailDto(dto.getEmail(), "TimePaper", randomCode);
+//
+//      javaEmailSender.sendJavaEmail(javaEmailDto);
+      return false;
+    }
+  }
+
+  @Transactional
+  public boolean checkEmailVerificationCode(CertificationNumberRequestDto dto) {
+    try {
+      String randomCode = redisTemplate.opsForValue().get(dto.getEmail());
+      System.out.println(randomCode);
+      System.out.println(dto.getAuthenticationCode());
+      boolean verification = randomCode != null && randomCode.equals(dto.getAuthenticationCode());
+      if (verification) {
+        String verificationStr = String.valueOf(verification); // 인증번호 인증 여부
+        redisTemplate.opsForValue()
+            .set(dto.getEmail(), verificationStr, Duration.ofMinutes(5));
+        return true;
+      } else {
+        return false;
+      }
+    } catch (Exception e) {
+      return false;
+    }
+
+  }
+
+
+  @Transactional
+  public boolean signUp(SignupDto dto) {
+    String signupValidation = redisTemplate.opsForValue().get(dto.getEmail());
+
+    if (signupValidation.equals("true")) {
+      try {
+        User auth = dto.toEntity(dto);
+        authRepository.save(auth);
+        return true;
+      } catch (Exception e) {
+        return false;
+      }
+    } else {
+      return false;
+    }
   }
 
 }

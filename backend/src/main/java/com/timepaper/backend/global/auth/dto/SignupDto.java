@@ -15,12 +15,11 @@ public class SignupDto {
   @JsonProperty("isTermsAccepted")
   private boolean isTermsAccepted;
 
-  public User toEntity(String encodedPassword) {
+  public User toEntity(SignupDto dto) {
     return User.builder()
-               .email(email)
-               .password(encodedPassword)
-               .isPrivacyPolicyAccepted(isPrivacyPolicyAccepted())
-               .isTermsAccepted(isTermsAccepted())
-               .build();
+        .email(dto.getEmail())
+        .password(dto.getPassword())
+        .isPrivacyPolicyAccepted(dto.isPrivacyPolicyAccepted())
+        .isTermsAccepted(dto.isTermsAccepted()).build();
   }
 }
