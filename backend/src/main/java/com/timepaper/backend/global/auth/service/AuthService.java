@@ -138,4 +138,62 @@ public class AuthService {
     userRepository.save(user);
   }
 
+  public boolean emailverification(EmailCertificationRequestDto dto) {
+    boolean emailExistence = authRepository.findByEmail(dto.getEmail());
+
+    if (emailExistence) {
+      return true;
+    } else {
+      String randomCode = UUID.randomUUID().toString().replace("-", "").substring(0, 6)
+          .toUpperCase();
+      redisTemplate.opsForValue().set(dto.getEmail(), randomCode, Duration.ofMinutes(5));
+
+      System.out.println(randomCode); // 인증번호
+
+//      JavaEmailDto javaEmailDto = new JavaEmailDto(dto.getEmail(), "TimePaper", randomCode);
+//
+//      javaEmailSender.sendJavaEmail(javaEmailDto);
+      return false;
+    }
+  }
+
+  @Transactional
+  public boolean checkEmailVerificationCode(CertificationNumberRequestDto dto) {
+    try {
+      String randomCode = redisTemplate.opsForValue().get(dto.getEmail());
+      System.out.println(randomCode);
+      System.out.println(dto.getAuthenticationCode());
+      boolean verification = randomCode != null && randomCode.equals(dto.getAuthenticationCode());
+      if (verification) {
+        String verificationStr = String.valueOf(verification); // 인증번호 인증 여부
+        redisTemplate.opsForValue()
+            .set(dto.getEmail(), verificationStr, Duration.ofMinutes(5));
+        return true;
+      } else {
+        return false;
+      }
+    } catch (Exception e) {
+      return false;
+    }
+
+  }
+
+
+  @Transactional
+  public boolean signUp(SignupDto dto) {
+    String signupValidation = redisTemplate.opsForValue().get(dto.getEmail());
+
+    if (signupValidation.equals("true")) {
+      try {
+        User auth = dto.toEntity(dto);
+        authRepository.save(auth);
+        return true;
+      } catch (Exception e) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
 }
