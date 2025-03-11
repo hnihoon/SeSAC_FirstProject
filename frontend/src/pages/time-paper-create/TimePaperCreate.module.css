@@ -1,4 +1,5 @@
 .container {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -14,6 +15,8 @@
 
 .errContainer {
   text-align: center;
-  font-family: var(--pretendard-semiBold);
   margin-top: 3%;
+  color: red;
+  font-size: var(--font-size-small);
+  font-family: var(--pretendard-Light);
 }
