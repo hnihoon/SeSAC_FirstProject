@@ -1,9 +1,11 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
 :root {
   /*color*/
   --orange-color: #f0842c;
-  --gray-color: #C8C8C8;
-  --disable-gray-color: #E6E3E3;
-  --background-color: #F6F1E7;
+  --gray-color: #c8c8c8;
+  --disable-gray-color: #e6e3e3;
+  --background-color: #f6f1e7;
   --black-color: #000000;
 
   /*font*/
@@ -11,46 +13,25 @@
   --pretendard-bold: 'Pretendard-Bold';
   --pretendard-semiBold: 'Pretendard-SemiBold';
   --pretendard-light: 'Pretendard-Light';
-
   --font-size-small: 12px;
   --font-size-medium: 18px;
 
   --top-margin: 10%;
 }
 
-@font-face {
-  font-family: 'Pretendard-Regular';
-  src: url('../assets/fonts/Pretendard-Regular.otf') format('opentype');
-}
-
-@font-face {
-  font-family: 'Pretendard-Bold';
-  src: url('../assets/fonts/Pretendard-Bold.otf') format('opentype');
-}
-
-@font-face {
-  font-family: 'Pretendard-SemiBold';
-  src: url('../assets/fonts/Pretendard-SemiBold.otf') format('opentype');
-}
-
-@font-face {
-  font-family: 'Pretendard-Light';
-  src: url('../assets/fonts/Pretendard-Light.otf') format('opentype');
-}
-
-@font-face {
-  font-family: 'Pretendard-Medium';
-  src: url('../assets/fonts/Pretendard-Medium.otf') format('opentype');
-}
-
 .main-container {
+  position: relative;
   margin: 0 auto;
   background-color: var(--background-color);
   width: 400px;
-  min-height: 100vh;
   padding-bottom: 30px;
   min-height: 100vh;
   overflow: hidden;
+}
+
+/* myPage에서 dropdown을 위한 css */
+.mypage-container{
+  position:relative;
 }
 
 .logo-image {
@@ -62,5 +43,5 @@
 
 body {
   margin: 0px;
-  overflow-x: hidden;
+  /* overflow-x: hidden; */
 }
